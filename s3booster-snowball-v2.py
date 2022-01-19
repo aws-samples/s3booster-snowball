@@ -1,6 +1,8 @@
 #!/bin/env python3
 '''
 ChangeLogs
+- 2022.01.19:
+  - added no_extract option
 - 2021.08.12:
   - using s3client.upload_fileobj instead of mpu_upload
   - improve upload performance, but more memory usage

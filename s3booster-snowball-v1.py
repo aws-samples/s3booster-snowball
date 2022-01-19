@@ -1,6 +1,8 @@
 #!/bin/env python3
 '''
 ChangeLogs
+- 2022.01.19:
+  - added no_extract option
 - 2021.08.11:
   - adding compression argument and adjusting suffix "tgz"
   - compression feature is added by "Kirill Davydychev", Thanks Kirill
