@@ -131,7 +131,7 @@ filelist_log = logging.getLogger('filelist')
 
 ## code from snowball_uploader
 def create_mpu(key_name):
-    if no_extract = 'y':
+    if no_extract == 'y':
         mpu = s3_client.create_multipart_upload(Bucket=bucket_name, Key=key_name, StorageClass=s3_client_class)
     else:
         mpu = s3_client.create_multipart_upload(Bucket=bucket_name, Key=key_name, StorageClass=s3_client_class, Metadata={"snowball-auto-extract": "true"})

@@ -152,10 +152,10 @@ def copy_to_snowball(tar_name, org_files_list):
                 error_log.info("%s is ignored" % file_name) 
     recv_buf.seek(0)
     success_log.info('%s uploading',tar_name)
-        if no_extract = 'y':
-            s3_client.upload_fileobj(recv_buf, bucket_name, tar_name)
-        else:
-            s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'}})
+    if no_extract == 'y':
+        s3_client.upload_fileobj(recv_buf, bucket_name, tar_name)
+    else:
+        s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'}})
     ### print metadata
     meta_out = s3_client.head_object(Bucket=bucket_name, Key=tar_name)
     success_log.info('meta info: %s ',str(meta_out))
