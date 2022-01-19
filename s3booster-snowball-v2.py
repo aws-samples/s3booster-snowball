@@ -67,6 +67,7 @@ parser.add_argument('--max_process', help='NUM e) 5', action='store', default=5,
 parser.add_argument('--max_tarfile_size', help='NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB, 10GB for >total 50GB', action='store', default=10*(1024**3), type=int)
 parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
 parser.add_argument('--compression', help='specify gz to enable', action='store', default='')
+parser.add_argument('--no_extract', help='y= Do not set the autoextract flag', action='store', default='')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -149,7 +150,10 @@ def copy_to_snowball(tar_name, org_files_list):
                 error_log.info("%s is ignored" % file_name) 
     recv_buf.seek(0)
     success_log.info('%s uploading',tar_name)
-    s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'}})
+        if no_extract = 'y':
+            s3_client.upload_fileobj(recv_buf, bucket_name, tar_name)
+        else:
+            s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'}})
     ### print metadata
     meta_out = s3_client.head_object(Bucket=bucket_name, Key=tar_name)
     success_log.info('meta info: %s ',str(meta_out))
