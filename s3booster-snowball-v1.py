@@ -1,6 +1,8 @@
 #!/bin/env python3
 '''
 ChangeLogs
+- 2022.01.19:
+  - added no_extract option
 - 2021.08.11:
   - adding compression argument and adjusting suffix "tgz"
   - compression feature is added by "Kirill Davydychev", Thanks Kirill
@@ -64,6 +66,7 @@ parser.add_argument('--max_process', help='NUM e) 5', action='store', default=5,
 parser.add_argument('--max_tarfile_size', help='NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB, 10GB for >total 50GB', action='store', default=10*(1024**3), type=int)
 parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
 parser.add_argument('--compression', help='specify gz to enable', action='store', default='')
+parser.add_argument('--no_extract', help='y= Do not set the autoextract flag', action='store', default='')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -76,6 +79,7 @@ max_process = args.max_process
 max_tarfile_size = args.max_tarfile_size # 10GiB, 100GiB is max limit of snowball
 max_part_size = args.max_part_size  # 100MB, 500MiB is max limit of snowball
 compression = args.compression # default for no compression, "gz" to enable
+no_extract=args.no_extract # determine if the archive will not be auto-extracted upon import
 log_level = logging.INFO ## DEBUG, INFO, WARNING, ERROR
 # end of user variables ## you don't need to modify below codes.
 ##### Optional variables
@@ -127,7 +131,10 @@ filelist_log = logging.getLogger('filelist')
 
 ## code from snowball_uploader
 def create_mpu(key_name):
-    mpu = s3_client.create_multipart_upload(Bucket=bucket_name, Key=key_name, StorageClass=s3_client_class, Metadata={"snowball-auto-extract": "true"})
+    if no_extract == 'y':
+        mpu = s3_client.create_multipart_upload(Bucket=bucket_name, Key=key_name, StorageClass=s3_client_class)
+    else:
+        mpu = s3_client.create_multipart_upload(Bucket=bucket_name, Key=key_name, StorageClass=s3_client_class, Metadata={"snowball-auto-extract": "true"})
     mpu_id = mpu["UploadId"]
     return mpu_id
 
