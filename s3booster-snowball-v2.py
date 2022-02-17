@@ -72,6 +72,7 @@ parser.add_argument('--max_tarfile_size', help='NUM bytes e) $((1*(1024**3))) #1
 parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
 parser.add_argument('--compression', help='specify gz to enable', action='store', default='')
 parser.add_argument('--no_extract', help='y= Do not set the autoextract flag', action='store', default='')
+parser.add_argument('--target_file_prefix', help='prefix of the target file we are creating into the snowball', action='store', default='')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -85,6 +86,7 @@ max_tarfile_size = args.max_tarfile_size # 10GiB, 100GiB is max limit of snowbal
 max_part_size = args.max_part_size  # 100MB, 500MiB is max limit of snowball
 compression = args.compression # default for no compression, "gz" to enable
 no_extract  = args.no_extract
+target_file_prefix = args.target_file_prefix
 log_level = logging.INFO ## DEBUG, INFO, WARNING, ERROR
 # end of user variables ## you don't need to modify below codes.
 ##### Optional variables
@@ -250,14 +252,15 @@ def upload_get_files(sub_prefix, q):
     return num_obj
 
 def upload_file(q):
+    global target_file_prefix
     while True:
         mp_data = q.get()
         org_files_list = mp_data
         randchar = str(gen_rand_char())
         if compression == '':
-            tar_name = ('snowball-%s-%s.tar' % (current_time, randchar))
+            tar_name = ('%ssnowball-%s-%s.tar' % (target_file_prefix, current_time, randchar))
         elif compression == 'gz':
-            tar_name = ('snowball-%s-%s.tgz' % (current_time, randchar))
+            tar_name = ('%ssnowball-%s-%s.tgz' % (target_file_prefix, current_time, randchar))
         success_log.debug('receving mp_data size: %s'% len(org_files_list))
         success_log.debug('receving mp_data: %s'% org_files_list)
         if mp_data == quit_flag:
