@@ -69,7 +69,7 @@ parser.add_argument('--max_process', help='NUM e) 5', action='store', default=5,
 parser.add_argument('--max_tarfile_size', help='NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB, 10GB for >total 50GB', action='store', default=10*(1024**3), type=int)
 parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
 parser.add_argument('--compression', help='specify gz to enable', action='store', default='')
-parser.add_argument('--no_extract', help='y= Do not set the autoextract flag', action='store', default='')
+parser.add_argument('--no_extract', help='yes|no; Do not set the autoextract flag', action='store', default='no')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -82,6 +82,11 @@ max_process = args.max_process
 max_tarfile_size = args.max_tarfile_size # 10GiB, 100GiB is max limit of snowball
 max_part_size = args.max_part_size  # 100MB, 500MiB is max limit of snowball
 compression = args.compression # default for no compression, "gz" to enable
+no_extract = args.no_extract # default for no compression, "gz" to enable
+if args.no_extract == 'yes':
+    no_extract = True
+else:
+    no_extract = False
 log_level = logging.INFO ## DEBUG, INFO, WARNING, ERROR
 # end of user variables ## you don't need to modify below codes.
 ##### Optional variables
@@ -152,7 +157,7 @@ def copy_to_snowball(tar_name, org_files_list):
                 error_log.info("%s is ignored" % file_name) 
     recv_buf.seek(0)
     success_log.info('%s uploading',tar_name)
-    if no_extract == 'y':
+    if no_extract:
         s3_client.upload_fileobj(recv_buf, bucket_name, tar_name)
     else:
         s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'}})
