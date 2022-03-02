@@ -1,22 +1,16 @@
 # s3booster snowball
 s3booster-snowball.py, this script implemented batch feature in parallel so it is fast and simple to use, especially when dealing with small files. If you have headache with low performance when uploading small files, it may give you StimPack!
 
-## v1 or v2?
-s3booster-snowball has two types of version 
-  - version 1: suitable for low memory workstation, but little slower comparing to version 2
-  - version 2: using more memory, it shows faster upload performance.
-    - workstation memory requirement: 32GB preferred 
-        - free memory > (max-tarfile-size * max-process) + 0.2 * (max-tarfile-size * max-process)
 ## How to Use
 Here is example to execute s3booster-snowball.py
 ```sh
-python3 s3booster-snowball.py --bucket_name your-own-bucket --src_dir /data/fs1/ --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1 --prefix_root fs1/ --max_process 5 --max_tarfile_size $((1*(1024**3))) --max_part_size $((100*(1024**2)))
+python3 s3booster-snowball-v2.py --bucket_name your-own-bucket --src_dir /data/fs1/ --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1 --prefix_root fs1/ --max_process 5 --max_tarfile_size $((1*(1024**3))) --max_part_size $((100*(1024**2))) --no_extract 'no'
 ```
 
 Here is help 
 ```sh
-s3booster]$ python3 s3booster-snowball.py -h
-usage: s3booster-snowball.py [-h] --bucket_name BUCKET_NAME 
+s3booster]$ python3 s3booster-snowball-v2.py -h
+usage: s3booster-snowball-v2.py [-h] --bucket_name BUCKET_NAME 
                                          --src_dir SRC_DIR 
                                          --endpoint ENDPOINT
                                          [--profile_name PROFILE_NAME]
@@ -25,6 +19,7 @@ usage: s3booster-snowball.py [-h] --bucket_name BUCKET_NAME
                                          [--max_tarfile_size MAX_TARFILE_SIZE]
                                          [--max_part_size MAX_PART_SIZE]
                                          [--compression COMPRESSION]
+                                         [--no_extract NO_EXTRACT]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -45,7 +40,9 @@ optional arguments:
   --max_part_size MAX_PART_SIZE
                         NUM bytes e) $((100*(1024**2))) #100MB
   --compression COMPRESSION
-                        specify gz to enable
+                        specify gz to enable compression
+  --no_extract NO_EXTRACT
+                        yes or no, 'yes' means not to add "snowball-auto-extract" metadata
 ```                        
 
 ## Executing Script
@@ -82,3 +79,14 @@ Log Directory: ./log/
 - error-{date}.log : each file of failed to tar will be logged here
 - success-{date}.log: success message will be logged here
 - filelist-{date}.log: all files which are archived will be logged here
+
+## Caveat
+### metadata, snowball-auto-extract
+--no_extract = 'no': if you are moving data to Snowball Edge, "--no_extract 'yes'" should be used.
+Specifying 'snowball-auto-extract=true' automatically extracts the contents of the archived files when the data is imported into Amazon S3. You can confirm this output from 'success-[date].log'
+### Don't include './' path in src_dir parameter
+Normally in Unix/Linux environment, './' means current directory, so someone tends to use it. However, if you use in '--src_dir' parameter, it will add '.' prefix in S3.
+
+For example, 
+when "--src_dir './d001/dir001'" 
+it will create following prefix like "s3://[bucket_name]/./d001/dir001/file.1"
