@@ -20,6 +20,7 @@ usage: s3booster-snowball-v2.py [-h] --bucket_name BUCKET_NAME
                                          [--max_part_size MAX_PART_SIZE]
                                          [--compression COMPRESSION]
                                          [--no_extract NO_EXTRACT]
+                                         [--target_file_prefix TARGET_FILE_PREFIX]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -30,19 +31,21 @@ optional arguments:
                         https://s3.ap-northeast-2.amazonaws.com
   --profile_name PROFILE_NAME
                         aws_profile_name e) sbe1
-  --prefix_root PREFIX_ROOT
+  --prefix_root PREFIX_ROOT (Optional)
                         prefix root e) dir1/
-  --max_process MAX_PROCESS
+  --max_process MAX_PROCESS (Optional)
                         NUM e) 5
-  --max_tarfile_size MAX_TARFILE_SIZE
+  --max_tarfile_size MAX_TARFILE_SIZE (Optional)
                         NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB,
                         10GB for >total 50GB
-  --max_part_size MAX_PART_SIZE
+  --max_part_size MAX_PART_SIZE (Optional)
                         NUM bytes e) $((100*(1024**2))) #100MB
-  --compression COMPRESSION
+  --compression COMPRESSION (Optional)
                         specify gz to enable compression
-  --no_extract NO_EXTRACT
+  --no_extract NO_EXTRACT (Optional)
                         yes or no, 'yes' means not to add "snowball-auto-extract" metadata
+  --target_file_prefix TARGET_FILE_PREFIX (Optional)
+                        prefix of TARFILE on S3 location
 ```                        
 
 ## Executing Script
@@ -80,6 +83,10 @@ Log Directory: ./log/
 - success-{date}.log: success message will be logged here
 - filelist-{date}.log: all files which are archived will be logged here
 
+## File Path
+If you want to change objecs path which are extracted, you can specify *prefix_root*.
+
+If you want to change tarfile's path on S3, you can specify *target_file_prefix*
 ## Caveat
 ### metadata, snowball-auto-extract
 --no_extract = 'no': if you are moving data to Snowball Edge, "--no_extract 'yes'" should be used.
