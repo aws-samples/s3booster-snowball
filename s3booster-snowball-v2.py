@@ -2,9 +2,13 @@
 '''
 ChangeLogs
 - 2022.03.23:
+  - uploading log files(filelist, error, success) to S3
+- 2022.03.23:
   - added target_file_prefix option
+  - featured by "Marcos Diez", Thanks Marcos
 - 2022.01.19:
   - added no_extract option
+  - featured by "David Byte", Thanks David
 - 2021.08.12:
   - using s3client.upload_fileobj instead of mpu_upload
   - improve upload performance, but more memory usage
@@ -156,8 +160,8 @@ def copy_to_snowball(tar_name, org_files_list):
             try:
                 tar.add(file_name, arcname=obj_name)
                 collected_files_no += 1
-                filelist_log.info(file_name + delimeter + obj_name + delimeter + str(file_size)) #kyongki
-            except IOError:
+                filelist_log.info(tar_name + delimeter + file_name + delimeter + obj_name + delimeter + str(file_size)) #kyongki
+            except:
                 error_log.info("%s is ignored" % file_name)
     recv_buf.seek(0)
     success_log.info('%s uploading',tar_name)
@@ -290,6 +294,13 @@ def upload_file_multi(src_dir):
 
 def s3_booster_help():
     print("example: python3 s3booster_upload.py")
+
+# upload log files to S3
+def upload_log():
+    log_files = [errorlog_file, successlog_file, filelist_file]
+    for file in log_files:
+        s3_client.upload_file(file, bucket_name, file)
+
 # start main function
 if __name__ == '__main__':
 
@@ -303,6 +314,7 @@ if __name__ == '__main__':
 
     if cmd == 'upload_sbe':
         total_files = upload_file_multi(src_dir)
+        upload_log()
     else:
         s3_booster_help
 
