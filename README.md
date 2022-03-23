@@ -2,7 +2,8 @@
 s3booster-snowball.py, this script implemented batch feature in parallel so it is fast and simple to use, especially when dealing with small files. If you have headache with low performance when uploading small files, it may give you StimPack!
 
 ## How to Use
-Here is example to execute s3booster-snowball.py
+Here is example to execute s3booster-snowball-v2.py \\
+or you can refer *run-s3booster-sbe.sh* shell script.
 ```sh
 python3 s3booster-snowball-v2.py --bucket_name your-own-bucket --src_dir /data/fs1/ --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1 --prefix_root fs1/ --max_process 5 --max_tarfile_size $((1*(1024**3))) --max_part_size $((100*(1024**2))) --no_extract 'no'
 ```
