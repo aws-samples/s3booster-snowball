@@ -15,18 +15,18 @@ ChangeLogs
 - 2021.08.09:
   - error handling, when tar can't archive a file with 'permission denied' error'
 - 2021.08.05:
-  - this utility will copy files from local filesystem to SnowballEdge in parallel  
+  - this utility will copy files from local filesystem to SnowballEdge in parallel
   - snowball_uploader alternative
 - 2021.08.03:
-  - support multiprocessing(spawn) 
+  - support multiprocessing(spawn)
   - fixing windows path delimeter (\)
-  - support compatibility of file name between MAC and Windows 
+  - support compatibility of file name between MAC and Windows
 - 2021.08.02:
   - adding logger
   - fixing error on python3.8, multiprocessing.set_start_method("fork")
     - https://github.com/pytest-dev/pytest-flask/issues/104
 - 2021.08.01: adding uploader feature
-- 2021.07.24: 
+- 2021.07.24:
 - 2021.07.23: applying multiprocessing.queue + process instead of pool
 - 2021.07.21: modified getObject function
   - for parallel processing, multiprocessing.Pool used
@@ -59,13 +59,13 @@ import argparse
 
 ## treating arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--bucket_name', help='your bucket name e) your-bucket', action='store', required=True) 
-parser.add_argument('--src_dir', help='source directory e) /data/dir1/', action='store', required=True) 
-#parser.add_argument('--region', help='aws_region e) ap-northeast-2', action='store') 
-parser.add_argument('--endpoint', help='snowball endpoint e) http://10.10.10.10:8080 or https://s3.ap-northeast-2.amazonaws.com', action='store', default='https://s3.ap-northeast-2.amazonaws.com', required=True) 
-parser.add_argument('--profile_name', help='aws_profile_name e) sbe1', action='store', default='default') 
-parser.add_argument('--prefix_root', help='prefix root e) dir1/', action='store', default='') 
-parser.add_argument('--max_process', help='NUM e) 5', action='store', default=5, type=int) 
+parser.add_argument('--bucket_name', help='your bucket name e) your-bucket', action='store', required=True)
+parser.add_argument('--src_dir', help='source directory e) /data/dir1/', action='store', required=True)
+#parser.add_argument('--region', help='aws_region e) ap-northeast-2', action='store')
+parser.add_argument('--endpoint', help='snowball endpoint e) http://10.10.10.10:8080 or https://s3.ap-northeast-2.amazonaws.com', action='store', default='https://s3.ap-northeast-2.amazonaws.com', required=True)
+parser.add_argument('--profile_name', help='aws_profile_name e) sbe1', action='store', default='default')
+parser.add_argument('--prefix_root', help='prefix root e) dir1/', action='store', default='')
+parser.add_argument('--max_process', help='NUM e) 5', action='store', default=5, type=int)
 parser.add_argument('--max_tarfile_size', help='NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB, 10GB for >total 50GB', action='store', default=10*(1024**3), type=int)
 parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
 parser.add_argument('--compression', help='specify gz to enable', action='store', default='')
@@ -154,7 +154,7 @@ def copy_to_snowball(tar_name, org_files_list):
                 collected_files_no += 1
                 filelist_log.info(file_name + delimeter + obj_name + delimeter + str(file_size)) #kyongki
             except IOError:
-                error_log.info("%s is ignored" % file_name) 
+                error_log.info("%s is ignored" % file_name)
     recv_buf.seek(0)
     success_log.info('%s uploading',tar_name)
     if no_extract:
@@ -201,7 +201,7 @@ def conv_obj_name(file_name, prefix_root, sub_prefix):
     if prefix_root[-1] != '/':
         prefix_root = prefix_root + '/'
     if os.name == 'nt':
-        obj_name = prefix_root + file_name.replace(sub_prefix,'',1).replace('\\', '/')        
+        obj_name = prefix_root + file_name.replace(sub_prefix,'',1).replace('\\', '/')
     else:
         obj_name = prefix_root + file_name.replace(sub_prefix,'',1)
     return obj_name
@@ -219,7 +219,7 @@ def upload_get_files(sub_prefix, q):
                 # support compatibility of MAC and windows
                 #file_name = unicodedata.normalize('NFC', file_name)
                 obj_name = conv_obj_name(file_name, prefix_root, sub_prefix)
-                f_size = os.stat(file_name).st_size                
+                f_size = os.stat(file_name).st_size
                 file_info = (file_name, obj_name, f_size)
                 org_files_list.append(file_info)
                 sum_size = sum_size + f_size
@@ -256,7 +256,7 @@ def upload_file(q):
         mp_data = q.get()
         org_files_list = mp_data
         randchar = str(gen_rand_char())
-        if compression == '': 
+        if compression == '':
             tar_name = ('snowball-%s-%s.tar' % (current_time, randchar))
         elif compression == 'gz':
             tar_name = ('snowball-%s-%s.tgz' % (current_time, randchar))
@@ -272,14 +272,14 @@ def upload_file(q):
             error_log.info(e)
             traceback.print_exc()
         #return 0 ## for the dubug, it will pause with error
-        
+
 def upload_file_multi(src_dir):
     success_log.info('%s directory is uploading' % src_dir)
     p_list = run_multip(max_process, upload_file, q)
     # get object list and ingest to processes
     num_obj = upload_get_files(src_dir, q)
     # sending quit_flag and join processes
-    finishq(q, p_list) 
+    finishq(q, p_list)
     success_log.info('%s directory is uploaded' % src_dir)
     return num_obj
 
@@ -291,7 +291,7 @@ if __name__ == '__main__':
     # define simple queue
     #q = multiprocessing.Queue()
     q = multiprocessing.Manager().Queue()
-    
+
     start_time = datetime.now()
     success_log.info("starting script..."+str(start_time))
     src_dir = prefix_list
