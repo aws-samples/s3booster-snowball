@@ -46,7 +46,7 @@ optional arguments:
   --no_extract NO_EXTRACT (Optional)
                         yes or no, 'yes' means not to add "snowball-auto-extract" metadata
   --target_file_prefix TARGET_FILE_PREFIX (Optional)
-                        prefix of TARFILE on S3 location
+                        prefix of TARFILE on S3 location, ex)--target_file_prefix "new_target/"
 ```                        
 
 ## Executing Script
@@ -87,7 +87,7 @@ Log Directory: ./log/
 ## File Path
 If you want to change objecs path which are extracted, you can specify *prefix_root*.
 
-If you want to change tarfile's path on S3, you can specify *target_file_prefix*
+If you want to change tarfile's path on S3, you can specify *target_file_prefix*(when you use target_file_prefix, don't forget to add '/' such as 'newpath/'.
 ## Caveat
 ### metadata, snowball-auto-extract
 --no_extract = 'no': if you are moving data to Snowball Edge, "--no_extract 'yes'" should be used.

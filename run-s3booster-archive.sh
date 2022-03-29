@@ -1,0 +1,1 @@
+python3 s3booster-snowball-v2.py --bucket_name 'your-own-bucket' --src_dir '/data2/fs1/' --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1  --max_process 5 --max_tarfile_size $((1*(1024**3)))  --no_extract 'yes' --target_file_prefix 'new_s3_path/' --storage_class 'GLACIER_IR'

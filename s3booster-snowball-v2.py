@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 '''
 ChangeLogs
+- 2022.03.29:
+  - added storage_class option
+  - bug fix: error(index range) occured when 'prefix_root' is not specified
 - 2022.03.23:
   - uploading log files(filelist, error, success) to S3
 - 2022.03.23:
@@ -62,6 +65,7 @@ import io
 import tarfile
 import traceback
 import argparse
+from boto3.s3.transfer import TransferConfig
 
 ## treating arguments
 parser = argparse.ArgumentParser()
@@ -73,10 +77,10 @@ parser.add_argument('--profile_name', help='aws_profile_name e) sbe1', action='s
 parser.add_argument('--prefix_root', help='prefix root e) dir1/', action='store', default='')
 parser.add_argument('--max_process', help='NUM e) 5', action='store', default=5, type=int)
 parser.add_argument('--max_tarfile_size', help='NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB, 10GB for >total 50GB', action='store', default=10*(1024**3), type=int)
-parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
 parser.add_argument('--compression', help='specify gz to enable', action='store', default='')
 parser.add_argument('--no_extract', help='yes|no; Do not set the autoextract flag', action='store', default='no')
 parser.add_argument('--target_file_prefix', help='prefix of the target file we are creating into the snowball', action='store', default='')
+parser.add_argument('--storage_class', help='specify S3 classes, be cautious Snowball support only STANDARD class; StorageClass=STANDARD|REDUCED_REDUNDANCY|STANDARD_IA|ONEZONE_IA|INTELLIGENT_TIERING|GLACIER|DEEP_ARCHIVE|OUTPOSTS|GLACIER_IR', action='store', default='STANDARD')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -87,7 +91,6 @@ profile_name = args.profile_name
 endpoint = args.endpoint
 max_process = args.max_process
 max_tarfile_size = args.max_tarfile_size # 10GiB, 100GiB is max limit of snowball
-max_part_size = args.max_part_size  # 100MB, 500MiB is max limit of snowball
 compression = args.compression # default for no compression, "gz" to enable
 target_file_prefix = args.target_file_prefix
 no_extract = args.no_extract # default for no compression, "gz" to enable
@@ -96,12 +99,20 @@ if args.no_extract == 'yes':
 else:
     no_extract = False
 log_level = logging.INFO ## DEBUG, INFO, WARNING, ERROR
+storage_class = args.storage_class ## value is fixed, snowball only transferred to STANDARD class
+#storage_class = 'STANDARD' ## value is fixed, snowball only transferred to STANDARD class
+# StorageClass='STANDARD'|'REDUCED_REDUNDANCY'|'STANDARD_IA'|'ONEZONE_IA'|'INTELLIGENT_TIERING'|'GLACIER'|'DEEP_ARCHIVE'|'OUTPOSTS'|'GLACIER_IR'
+mpu_max_concurrency = 10
+transfer_config = TransferConfig(max_concurrency=mpu_max_concurrency)
 # end of user variables ## you don't need to modify below codes.
+
 ##### Optional variables
 ## begin of snowball_uploader variables
-s3_client_class = 'STANDARD' ## value is fixed, snowball only transferred to STANDARD class
-min_part_size = 5 * 1024 ** 2 # 16MiB for S3, 5MiB for SnowballEdge
-max_part_count = int(math.ceil(max_tarfile_size / max_part_size))
+### unUsed options
+#parser.add_argument('--max_part_size', help='NUM bytes e) $((100*(1024**2))) #100MB', action='store', default=100*(1024**2), type=int)
+#max_part_size = args.max_part_size  # 100MB, 500MiB is max limit of snowball
+#min_part_size = 5 * 1024 ** 2 # 16MiB for S3, 5MiB for SnowballEdge
+#max_part_count = int(math.ceil(max_tarfile_size / max_part_size))
 current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 # CMD variables
 cmd='upload_sbe' ## supported_cmd: 'download|del_obj_version|restore_obj_version'
@@ -166,9 +177,9 @@ def copy_to_snowball(tar_name, org_files_list):
     recv_buf.seek(0)
     success_log.info('%s uploading',tar_name)
     if no_extract:
-        s3_client.upload_fileobj(recv_buf, bucket_name, tar_name)
+        s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, Config=transfer_config)
     else:
-        s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'}})
+        s3_client.upload_fileobj(recv_buf, bucket_name, tar_name, ExtraArgs={'Metadata': {'snowball-auto-extract': 'true'},'StorageClass': storage_class}, Config=transfer_config)
     ### print metadata
     meta_out = s3_client.head_object(Bucket=bucket_name, Key=tar_name)
     success_log.info('meta info: %s ',str(meta_out))
@@ -204,10 +215,14 @@ def finishq(q, p_list):
         pi.join()
 
 def conv_obj_name(file_name, prefix_root, sub_prefix):
+    if len(prefix_root) == 0 :
+        pass
+    elif prefix_root[-1] != '/':
+        prefix_root = prefix_root + '/'
+    else:
+        prefix_root = prefix_root
     if sub_prefix[-1] != '/':
         sub_prefix = sub_prefix + '/'
-    if prefix_root[-1] != '/':
-        prefix_root = prefix_root + '/'
     if os.name == 'nt':
         obj_name = prefix_root + file_name.replace(sub_prefix,'',1).replace('\\', '/')
     else:
