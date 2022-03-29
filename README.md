@@ -1,52 +1,52 @@
 # s3booster snowball
-s3booster-snowball.py, this script implemented batch feature in parallel so it is fast and simple to use, especially when dealing with small files. If you have headache with low performance when uploading small files, it may give you StimPack!
+s3booster-snowball-v2.py, this script implemented batch feature in parallel so it is fast and simple to use, especially when dealing with small files. If you have headache with low performance when uploading small files, it may give you StimPack!
+s3booster provides two features 1)first one is to accellerate performance when ingesting small files on Snowball, 2)second is to archive files and generate big tar file on Amazon S3 in order to improve uploading performance and save management cost.
 
 ## How to Use
 Here is example to execute s3booster-snowball-v2.py \\
-or you can refer *run-s3booster-sbe.sh* shell script.
+or you can refer *run-s3booster-sbe.sh* and *run-s3booster-archive* shell scripts.
+
+For Snowball Usage,
 ```sh
-python3 s3booster-snowball-v2.py --bucket_name your-own-bucket --src_dir /data/fs1/ --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1 --prefix_root fs1/ --max_process 5 --max_tarfile_size $((1*(1024**3))) --max_part_size $((100*(1024**2))) --no_extract 'no'
+python3 s3booster-snowball-v2.py --bucket_name your-own-bucket --src_dir /data/fs1/ --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1 --prefix_root fs3/ --max_process 5 --max_tarfile_size $((1*(1024**3))) 
+```
+
+For Archiving Usage,
+```sh
+python3 s3booster-snowball-v2.py --bucket_name your-own-bucket --src_dir /data/fs1/ --endpoint https://s3.ap-northeast-2.amazonaws.com --profile_name sbe1 --max_process 5 --max_tarfile_size $((1*(1024**3))) --no_extract 'yes' --target_file_prefix 'new_s3_path/' --storage_class 'GLACIER_IR'
 ```
 
 Here is help 
 ```sh
-s3booster]$ python3 s3booster-snowball-v2.py -h
-usage: s3booster-snowball-v2.py [-h] --bucket_name BUCKET_NAME 
-                                         --src_dir SRC_DIR 
-                                         --endpoint ENDPOINT
-                                         [--profile_name PROFILE_NAME]
-                                         [--prefix_root PREFIX_ROOT]
-                                         [--max_process MAX_PROCESS]
-                                         [--max_tarfile_size MAX_TARFILE_SIZE]
-                                         [--max_part_size MAX_PART_SIZE]
-                                         [--compression COMPRESSION]
-                                         [--no_extract NO_EXTRACT]
-                                         [--target_file_prefix TARGET_FILE_PREFIX]
+ec2-user$ python3 s3booster-snowball-v2.py --help
+usage: s3booster-snowball-v2.py [-h] --bucket_name BUCKET_NAME --src_dir SRC_DIR --endpoint ENDPOINT [--profile_name PROFILE_NAME]
+                                [--prefix_root PREFIX_ROOT] [--max_process MAX_PROCESS] [--max_tarfile_size MAX_TARFILE_SIZE]
+                                [--compression COMPRESSION] [--no_extract NO_EXTRACT] [--target_file_prefix TARGET_FILE_PREFIX]
+                                [--storage_class STORAGE_CLASS]
 
 optional arguments:
   -h, --help            show this help message and exit
   --bucket_name BUCKET_NAME
                         your bucket name e) your-bucket
   --src_dir SRC_DIR     source directory e) /data/dir1/
-  --endpoint ENDPOINT   snowball endpoint e) http://10.10.10.10:8080 or
-                        https://s3.ap-northeast-2.amazonaws.com
+  --endpoint ENDPOINT   snowball endpoint e) http://10.10.10.10:8080 or https://s3.ap-northeast-2.amazonaws.com
   --profile_name PROFILE_NAME
                         aws_profile_name e) sbe1
-  --prefix_root PREFIX_ROOT (Optional)
+  --prefix_root PREFIX_ROOT
                         prefix root e) dir1/
-  --max_process MAX_PROCESS (Optional)
+  --max_process MAX_PROCESS
                         NUM e) 5
-  --max_tarfile_size MAX_TARFILE_SIZE (Optional)
-                        NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB,
-                        10GB for >total 50GB
-  --max_part_size MAX_PART_SIZE (Optional)
-                        NUM bytes e) $((100*(1024**2))) #100MB
-  --compression COMPRESSION (Optional)
-                        specify gz to enable compression
-  --no_extract NO_EXTRACT (Optional)
-                        yes or no, 'yes' means not to add "snowball-auto-extract" metadata
-  --target_file_prefix TARGET_FILE_PREFIX (Optional)
-                        prefix of TARFILE on S3 location, ex)--target_file_prefix "new_target/"
+  --max_tarfile_size MAX_TARFILE_SIZE
+                        NUM bytes e) $((1*(1024**3))) #1GB for < total 50GB, 10GB for >total 50GB
+  --compression COMPRESSION
+                        specify gz to enable
+  --no_extract NO_EXTRACT
+                        yes|no; Do not set the autoextract flag
+  --target_file_prefix TARGET_FILE_PREFIX
+                        prefix of the target file we are creating into the snowball
+  --storage_class STORAGE_CLASS
+                        specify S3 classes, be cautious Snowball support only STANDARD class; StorageClass=STANDARD|REDUCED_REDUNDANCY|STANDARD_I
+                        A|ONEZONE_IA|INTELLIGENT_TIERING|GLACIER|DEEP_ARCHIVE|OUTPOSTS|GLACIER_IR
 ```                        
 
 ## Executing Script
@@ -98,3 +98,32 @@ Normally in Unix/Linux environment, './' means current directory, so someone ten
 For example, 
 when "--src_dir './d001/dir001'" 
 it will create following prefix like "s3://[bucket_name]/./d001/dir001/file.1"
+
+## Search files with s3select
+When you archived files on S3, you have to know which TARFILE contains the file which you want to get back. 
+
+s3select will help you
+
+```sh
+#!/bin/bash
+bucket="your-own-bucket"
+key="log/filelist-20220329_050947.log"
+#keyword="d0006"
+keyword="dir0009/file0441"
+limitNum="100"
+tmpfile="/tmp/temp-s3select.log"
+
+#result=$(aws s3api select-object-content \
+aws s3api select-object-content \
+    --bucket $bucket \
+    --key $key \
+    --expression "SELECT * FROM s3object s where Lower(s._2) like '%${keyword}%' limit $limitNum" \
+    --expression-type 'SQL' \
+    --input-serialization '{"CSV": {"FieldDelimiter": ","}}' \
+    --output-serialization '{"CSV": {"FieldDelimiter": ","}}' /tmp/temp-s3select.log
+
+cat /tmp/temp-s3select.log
+echo ""
+echo "===== TAR Files containing $keyword ====="
+cat /tmp/temp-s3select.log | awk '{print $1}' | sort | uniq
+```
