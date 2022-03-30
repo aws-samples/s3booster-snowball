@@ -4,7 +4,7 @@ s3booster provides two features 1)first one is to accellerate performance when i
 
 ## How to Use
 Here is example to execute s3booster-snowball-v2.py \\
-or you can refer *run-s3booster-sbe.sh* and *run-s3booster-archive* shell scripts.
+or you can refer *run-s3booster-sbe.sh*[script](run-s3booster-seb.sh) and *run-s3booster-archive*[script](run-s3booster-archive) shell scripts.
 
 For Snowball Usage,
 ```sh
