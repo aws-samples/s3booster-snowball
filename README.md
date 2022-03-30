@@ -3,8 +3,8 @@
 s3booster provides two features 1)first one is to accellerate performance when ingesting small files on Snowball, 2)second is to archive files and generate big tar file on Amazon S3 in order to improve uploading performance and save management cost.
 
 ## How to Use
-Here is example to execute s3booster-snowball-v2.py \\
-or you can refer [*run-s3booster-sbe.sh*](run-s3booster-seb.sh) and [*run-s3booster-archive*](run-s3booster-archive) shell scripts.
+Here is example to execute [s3booster-snowball-v2.py](s3booster-snowball-v2.py)
+or you can refer [*run-s3booster-sbe.sh*](run-s3booster-sbe.sh) and [*run-s3booster-archive.sh*](run-s3booster-archive.sh) shell scripts.
 
 For Snowball Usage,
 ```sh
