@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 '''
 ChangeLogs
+- 2022.06.09:
+  - added followsymlinks option
 - 2022.03.29:
   - added storage_class option
   - bug fix: error(index range) occured when 'prefix_root' is not specified
@@ -81,6 +83,7 @@ parser.add_argument('--compression', help='specify gz to enable', action='store'
 parser.add_argument('--no_extract', help='yes|no; Do not set the autoextract flag', action='store', default='no')
 parser.add_argument('--target_file_prefix', help='prefix of the target file we are creating into the snowball', action='store', default='')
 parser.add_argument('--storage_class', help='specify S3 classes, be cautious Snowball support only STANDARD class; StorageClass=STANDARD|REDUCED_REDUNDANCY|STANDARD_IA|ONEZONE_IA|INTELLIGENT_TIERING|GLACIER|DEEP_ARCHIVE|OUTPOSTS|GLACIER_IR', action='store', default='STANDARD')
+parser.add_argument('--symlink', help='indicate to follow syblic link or not, default is no', action='store', default='no')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -98,6 +101,10 @@ if args.no_extract == 'yes':
     no_extract = True
 else:
     no_extract = False
+if args.symlink == 'yes':
+    symlink = True
+else:
+    symlink = False
 log_level = logging.INFO ## DEBUG, INFO, WARNING, ERROR
 storage_class = args.storage_class ## value is fixed, snowball only transferred to STANDARD class
 #storage_class = 'STANDARD' ## value is fixed, snowball only transferred to STANDARD class
@@ -235,7 +242,7 @@ def upload_get_files(sub_prefix, q):
     sum_size = 0
     org_files_list = []
    # get all files from given directory
-    for r,d,f in os.walk(sub_prefix):
+    for r,d,f in os.walk(sub_prefix, followlinks=symlink):
         for file in f:
             try:
                 file_name = os.path.join(r,file)
