@@ -99,6 +99,14 @@ For example,
 when "--src_dir './d001/dir001'" 
 it will create following prefix like "s3://[bucket_name]/./d001/dir001/file.1"
 
+### symbolic link supported(2022.06.09)
+--symlink='yes' option is added, so you can follow the symbolic link. However, be careful of using it, this option can cause infinite loop.
+
+Refering from here: https://docs.python.org/3/library/os.html#os.walk 
+```
+Note Be aware that setting followlinks to True can lead to infinite recursion if a link points to a parent directory of itself. walk() does not keep track of the directories it visited already.
+```
+
 ## Search files with s3select
 When you archived files on S3, you have to know which TARFILE contains the file which you want to get back. 
 
