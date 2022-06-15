@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 '''
 ChangeLogs
+- 2022.06.15:
+  - ignore broken symbolic link file
 - 2022.06.09:
-  - added followsymlinks option
+  - added --symlinkdir to follow the symbolic link dir option
 - 2022.03.29:
   - added storage_class option
   - bug fix: error(index range) occured when 'prefix_root' is not specified
@@ -68,6 +70,7 @@ import tarfile
 import traceback
 import argparse
 from boto3.s3.transfer import TransferConfig
+from pathlib import Path
 
 ## treating arguments
 parser = argparse.ArgumentParser()
@@ -83,7 +86,7 @@ parser.add_argument('--compression', help='specify gz to enable', action='store'
 parser.add_argument('--no_extract', help='yes|no; Do not set the autoextract flag', action='store', default='no')
 parser.add_argument('--target_file_prefix', help='prefix of the target file we are creating into the snowball', action='store', default='')
 parser.add_argument('--storage_class', help='specify S3 classes, be cautious Snowball support only STANDARD class; StorageClass=STANDARD|REDUCED_REDUNDANCY|STANDARD_IA|ONEZONE_IA|INTELLIGENT_TIERING|GLACIER|DEEP_ARCHIVE|OUTPOSTS|GLACIER_IR', action='store', default='STANDARD')
-parser.add_argument('--symlink', help='indicate to follow syblic link or not, default is no', action='store', default='no')
+parser.add_argument('--symlinkdir', help='indicate to follow syblic link or not, default is no', action='store', default='no')
 args = parser.parse_args()
 
 prefix_list = args.src_dir  ## Don't forget to add last slash '/'
@@ -101,10 +104,10 @@ if args.no_extract == 'yes':
     no_extract = True
 else:
     no_extract = False
-if args.symlink == 'yes':
-    symlink = True
+if args.symlinkdir == 'yes':
+    symlinkdir = True
 else:
-    symlink = False
+    symlinkdir = False
 log_level = logging.INFO ## DEBUG, INFO, WARNING, ERROR
 storage_class = args.storage_class ## value is fixed, snowball only transferred to STANDARD class
 #storage_class = 'STANDARD' ## value is fixed, snowball only transferred to STANDARD class
@@ -242,34 +245,38 @@ def upload_get_files(sub_prefix, q):
     sum_size = 0
     org_files_list = []
    # get all files from given directory
-    for r,d,f in os.walk(sub_prefix, followlinks=symlink):
+    for r,d,f in os.walk(sub_prefix, followlinks=symlinkdir):
         for file in f:
-            try:
-                file_name = os.path.join(r,file)
-                # support compatibility of MAC and windows
-                #file_name = unicodedata.normalize('NFC', file_name)
-                obj_name = conv_obj_name(file_name, prefix_root, sub_prefix)
-                f_size = os.stat(file_name).st_size
-                file_info = (file_name, obj_name, f_size)
-                org_files_list.append(file_info)
-                sum_size = sum_size + f_size
-                if max_tarfile_size < sum_size:
-                    sum_size = 0
-                    mp_data = org_files_list
-                    org_files_list = []
-                    try:
-                        # put files into queue in max_tarfile_size
-                        q.put(mp_data)
-                        success_log.debug('0, sending mp_data size: %s'% len(mp_data))
-                        success_log.debug('0, sending mp_data: %s'% mp_data)
-                    except Exception as e:
-                        error_log.info('exception error: putting %s into queue is failed' % file_name)
-                        error_log.info(e)
-                num_obj+=1
-            except Exception as e:
-                error_log.info('exception error: getting %s file info is failed' % file_name)
-                error_log.info(e)
-            #time.sleep(0.1)
+            file_name1 = os.path.join(r,file)
+            if (Path(file_name1).is_symlink()) and (not Path(file_name1).exists()):
+                print("Warning: " + file + " is broken symlink file, it will be ignored")
+            else:
+                try:
+                    file_name = os.path.join(r,file)
+                    # support compatibility of MAC and windows
+                    #file_name = unicodedata.normalize('NFC', file_name)
+                    obj_name = conv_obj_name(file_name, prefix_root, sub_prefix)
+                    f_size = os.stat(file_name).st_size
+                    file_info = (file_name, obj_name, f_size)
+                    org_files_list.append(file_info)
+                    sum_size = sum_size + f_size
+                    if max_tarfile_size < sum_size:
+                        sum_size = 0
+                        mp_data = org_files_list
+                        org_files_list = []
+                        try:
+                            # put files into queue in max_tarfile_size
+                            q.put(mp_data)
+                            success_log.debug('0, sending mp_data size: %s'% len(mp_data))
+                            success_log.debug('0, sending mp_data: %s'% mp_data)
+                        except Exception as e:
+                            error_log.info('exception error: putting %s into queue is failed' % file_name)
+                            error_log.info(e)
+                    num_obj+=1
+                except Exception as e:
+                    error_log.info('exception error: getting %s file info is failed' % file_name)
+                    error_log.info(e)
+                #time.sleep(0.1)
     try:
         # put remained files into queue
         mp_data = org_files_list

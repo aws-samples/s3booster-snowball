@@ -47,6 +47,7 @@ optional arguments:
   --storage_class STORAGE_CLASS
                         specify S3 classes, be cautious Snowball support only STANDARD class; StorageClass=STANDARD|REDUCED_REDUNDANCY|STANDARD_I
                         A|ONEZONE_IA|INTELLIGENT_TIERING|GLACIER|DEEP_ARCHIVE|OUTPOSTS|GLACIER_IR
+  --symlinkdir          yes|no; if you want to follow symbolic link dir, type 'yes', default is 'no'
 ```                        
 
 ## Executing Script
@@ -99,8 +100,10 @@ For example,
 when "--src_dir './d001/dir001'" 
 it will create following prefix like "s3://[bucket_name]/./d001/dir001/file.1"
 
-### symbolic link supported(2022.06.09)
---symlink='yes' option is added, so you can follow the symbolic link. However, be careful of using it, this option can cause infinite loop.
+### symbolic link directory supported(2022.06.09)
+--symlinkdir='yes' option is added, so you can follow the symbolic link directory, default value is 'no'. However, be careful of using it, this option can cause infinite loop.
+
+Also, now broken sybolic link files are ignored, and normal symbolic link file will be included into tarfile.
 
 Refering from here: https://docs.python.org/3/library/os.html#os.walk 
 ```
